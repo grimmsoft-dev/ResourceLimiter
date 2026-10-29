@@ -14,6 +14,19 @@ function Get-UEVersionInfo([string]$EngineRoot) {
     }
 }
 
+# A UE5 engine at a folder the user picked: the engine root (holding Engine\) or its Engine folder.
+# Returns $null if the folder isn't a UE5 engine.
+function Resolve-UEEngineFolder([string]$Path) {
+    $Path = $Path.Trim('"', ' ').TrimEnd('\')
+    if (-not $Path -or -not (Test-Path $Path -PathType Container)) { return $null }
+    if ((Split-Path $Path -Leaf) -eq 'Engine' -and -not (Test-Path (Join-Path $Path 'Engine\Build\Build.version'))) {
+        $Path = Split-Path $Path -Parent
+    }
+    $info = Get-UEVersionInfo $Path
+    if ($info) { $info | Add-Member Association $null }
+    $info
+}
+
 # Returns one object per UE5 install: Version ("5.6"), Patch ("5.6.1"), Root, Installed (launcher/binary build), Association.
 function Find-UE5Engines {
     $found = @{}

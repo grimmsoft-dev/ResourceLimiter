@@ -1,7 +1,7 @@
 {
   "FileVersion": 3,
-  "Version": 1,
-  "VersionName": "1.0.0",
+  "Version": 2,
+  "VersionName": "1.0.1",
   "FriendlyName": "Resource Limiter",
   "Description": "Editor-only toolbar toggle that caps the editor's CPU use at 90, 70 or 50% and trims its memory and GPU budgets to match.",
   "Category": "Editor",

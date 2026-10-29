@@ -87,7 +87,14 @@ New-Item -ItemType Directory -Force (Join-Path $stage 'Builds'), (Join-Path $sta
 
 Copy-Item (Join-Path $Root 'Installer\*') $stage
 Copy-Item (Join-Path $Root 'README.md') $stage -ErrorAction SilentlyContinue
-foreach ($v in $built) { Copy-Item (Join-Path $BuildDir "UE$v") (Join-Path $stage 'Builds') -Recurse }
+foreach ($v in $built) {
+    Copy-Item (Join-Path $BuildDir "UE$v") (Join-Path $stage 'Builds') -Recurse
+    # Ship the current descriptor (version, description) with older binaries, as long as the modules still match.
+    $stagedDescriptor = Join-Path $stage "Builds\UE$v\$Name\$Name.uplugin"
+    $builtModules = ((Get-Content $stagedDescriptor -Raw | ConvertFrom-Json).Modules.Name | Sort-Object) -join ','
+    if ($builtModules -ne (($Descriptor.Modules.Name | Sort-Object) -join ',')) { throw "UE $v build is out of date (modules changed); run Build.ps1 without -PackageOnly." }
+    Copy-Item $PluginFile.FullName $stagedDescriptor -Force
+}
 $src = New-Item -ItemType Directory -Force (Join-Path $stage "Source\$Name")
 Copy-Item $PluginFile.FullName $src
 foreach ($sub in 'Source', 'Resources', 'Config', 'Content') {

@@ -2,6 +2,7 @@
 #
 # Run Install.bat for the window, or from a console:
 #   Install.bat -Engine 5.6                          # into an engine (all projects using it)
+#   Install.bat -Engine "D:\Engines\UE_5.6"          # an engine folder the launcher doesn't know about
 #   Install.bat -Project "D:\MyGame\MyGame.uproject" # into one project
 #   Install.bat -Engine 5.6 -Uninstall
 #
@@ -117,8 +118,9 @@ if ($Engine -or $Project) {
     $failed = $false
     foreach ($e in $Engine) {
         $info = $Engines | Where-Object { $_.Version -eq $e -or $_.Root -eq $e.TrimEnd('\') } | Select-Object -First 1
+        if (-not $info) { $info = Resolve-UEEngineFolder $e }
         try {
-            if (-not $info) { throw "UE $e not found. Found: $(($Engines | ForEach-Object Version) -join ', ')" }
+            if (-not $info) { throw "'$e' is not a UE5 version or engine folder. Found: $(($Engines | ForEach-Object Version) -join ', ')" }
             Install-ToEngine $info
         } catch { Write-Log "  ERROR: $($_.Exception.Message)"; $failed = $true }
     }
@@ -147,8 +149,14 @@ $engineGroup = New-Object Windows.Forms.GroupBox -Property @{
     Text = 'Install into an engine (every project that uses it)'; Location = '12,52'; Size = '680,200'; Anchor = 'Top,Left,Right'
 }
 $engineList = New-Object Windows.Forms.ListView -Property @{
-    View = 'Details'; CheckBoxes = $true; FullRowSelect = $true; Location = '10,20'; Size = '660,170'; Anchor = 'Top,Bottom,Left,Right'
+    View = 'Details'; CheckBoxes = $true; FullRowSelect = $true; Location = '10,20'; Size = '660,138'; Anchor = 'Top,Bottom,Left,Right'
 }
+$addEngine = New-Object Windows.Forms.Button -Property @{ Text = 'Add engine folder...'; Location = '10,164'; Size = '150,27'; Anchor = 'Bottom,Left' }
+$addEngineNote = New-Object Windows.Forms.Label -Property @{
+    Text = 'For an engine not listed above (moved, copied or source-built).'; Location = '168,170'; Size = '500,20'
+    Anchor = 'Bottom,Left,Right'; ForeColor = [Drawing.Color]::DimGray
+}
+$engineGroup.Controls.AddRange(@($addEngine, $addEngineNote))
 [void]$engineList.Columns.Add('Engine', 70)
 [void]$engineList.Columns.Add('Location', 330)
 [void]$engineList.Columns.Add('Prebuilt', 70)
@@ -169,6 +177,17 @@ function Update-EngineList {
         [void]$engineList.Items.Add($item)
     }
 }
+
+$addEngine.Add_Click({
+    $dialog = New-Object Windows.Forms.FolderBrowserDialog -Property @{ Description = 'Choose an Unreal Engine 5 folder (the one that contains "Engine").' }
+    if ($dialog.ShowDialog() -ne 'OK') { return }
+    $info = Resolve-UEEngineFolder $dialog.SelectedPath
+    if (-not $info) { Write-Log "'$($dialog.SelectedPath)' is not an Unreal Engine 5 folder (no Engine\Build\Build.version for 5.x)."; return }
+    if (-not ($script:Engines | Where-Object { $_.Root -eq $info.Root })) { $script:Engines = @($script:Engines) + $info }
+    Update-EngineList
+    foreach ($item in $engineList.Items) { if ($item.Tag.Root -eq $info.Root) { $item.Checked = $true; $item.EnsureVisible() } }
+    Write-Log "Added UE $($info.Patch) at $($info.Root)."
+})
 
 $projectGroup = New-Object Windows.Forms.GroupBox -Property @{
     Text = 'Or install into one project'; Location = '12,258'; Size = '680,78'; Anchor = 'Top,Left,Right'
