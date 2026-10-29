@@ -1,0 +1,1 @@
+{ "Commands": ["ResourceLimiter.Level 50"], "Cvars": ["t.MaxFPS", "r.Streaming.PoolSize"], "Eval": ["TestChecks.job_cpu_rate()"], "Expect": ["Level 50: CPU capped at 50%,", "Texture streaming pool capped at \\d+ MB \\(50% of", "TEST t.MaxFPS = 30", "TestChecks.job_cpu_rate\\(\\) = flags=5 rate=5000"], "Forbid": ["AssignProcessToObject failed", "Could not"] }

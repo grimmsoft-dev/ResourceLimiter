@@ -1,0 +1,10 @@
+# Build output
+Build/
+Dist/
+
+# Unreal generated folders (if the plugin is opened in place)
+Binaries/
+Intermediate/
+Saved/
+DerivedDataCache/
+*.pdb
